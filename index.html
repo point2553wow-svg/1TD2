@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>ระบบเช็คชื่อนักเรียน 1ทด2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 1.8em;
+        }
+
+        .header .class-info {
+            color: #764ba2;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .header .teacher-info {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .date-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .card-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: bold;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .mode-container {
+            display: none;
+        }
+
+        .mode-container.active {
+            display: block;
+        }
+
+        .manual-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        #video {
+            width: 100%;
+            display: block;
+            border-radius: 12px;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .camera-status {
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1em;
+            padding: 20px;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            border: 3px solid #00ff00;
+            border-radius: 15px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            display: none;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                border-color: #00ff00;
+                box-shadow: 0 0 0 9999px rgba(0,0,0,0.5), 0 0 20px #00ff00;
+            }
+            50% {
+                border-color: #00ff00;
+                box-shadow: 0 0 0 9999px rgba(0,0,0,0.5), 0 0 40px #00ff00;
+            }
+        }
+
+        .scan-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,255,0,0.9);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: none;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #13f1fc 0%, #0470dc 100%);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: #f0f0f0;
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .search-box {
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+        }
+
+        .student-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s;
+        }
+
+        .student-item.present {
+            background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+        }
+
+        .student-item.absent {
+            background: #f8f9fa;
+        }
+
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .student-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .student-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3px;
+        }
+
+        .student-id {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .check-time {
+            font-size: 0.9em;
+            color: #00aa00;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .modal-body textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 2000;
+            animation: slideIn 0.3s;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+            color: #155724;
+        }
+
+        .notification.warning {
+            background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+            color: #856404;
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #721c24;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .scan-hint {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #856404;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 ระบบเช็คชื่อนักเรียน</h1>
+            <div class="class-info">ห้อง 1/ทด2</div>
+            <div class="teacher-info">👨‍🏫 ครูผู้สอน: [ชื่อครู]</div>
+            <div class="date-time" id="dateTime">—</div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📊 สถิติการเข้าเรียน</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">มาเรียน</div>
+                        <div class="stat-value" id="presentCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">ขาดเรียน</div>
+                        <div class="stat-value" id="absentCount">30</div>
+                    </div>
+                </div>
+
+                <div class="mode-toggle">
+                    <button class="mode-btn" onclick="switchMode('manual')">⌨️ พิมพ์รหัส</button>
+                    <button class="mode-btn active" onclick="switchMode('camera')">📷 แสกน</button>
+                </div>
+
+                <div id="manualMode" class="mode-container">
+                    <input type="text" id="manualInput" class="manual-input" placeholder="พิมพ์รหัสนักเรียนแล้วกด Enter" autofocus>
+                </div>
+
+                <div id="cameraMode" class="mode-container active">
+                    <div id="scanHint" class="scan-hint">
+                        💡 วางบาร์โค้ดในกรอบสีเขียว ระบบจะแสกนอัตโนมัติ
+                    </div>
+                    <div class="camera-container">
+                        <video id="video" autoplay playsinline></video>
+                        <canvas id="canvas"></canvas>
+                        <div class="camera-status" id="cameraStatus">
+                            <div style="font-size: 2.5em;">📷</div>
+                            <div>กดปุ่มเพื่อเปิดกล้อง</div>
+                        </div>
+                        <div class="scanner-overlay" id="scannerOverlay"></div>
+                        <div class="scan-info" id="scanInfo">🔍 กำลังแสกน...</div>
+                    </div>
+                    <div class="camera-controls">
+                        <button id="startCamera" class="btn btn-primary">📷 เปิดกล้อง</button>
+                        <button id="stopCamera" class="btn btn-danger" disabled>⏹️ ปิดกล้อง</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">👥 รายชื่อนักเรียน</div>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" data-tab="all">ทั้งหมด (30)</div>
+                    <div class="tab" data-tab="present">มาเรียน (0)</div>
+                    <div class="tab" data-tab="absent">ขาด (30)</div>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นหาชื่อหรือรหัส...">
+                </div>
+
+                <div class="student-list" id="studentList"></div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="exportToExcel()">📊 Excel</button>
+                    <button class="btn btn-warning" onclick="showHistory()">📜 ประวัติ</button>
+                    <button class="btn btn-danger" onclick="resetAttendance()">🔄 รีเซ็ต</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>⚠️ ทำเครื่องหมายการแก้ไข</h3></div>
+            <div class="modal-body">
+                <p id="editStudentInfo" style="margin-bottom:15px;font-weight:bold;color:#667eea;"></p>
+                <div style="background:#fff3cd;border:2px solid #ffc107;border-radius:8px;padding:12px;margin-bottom:15px;font-size:0.9em;">
+                    <strong>📝 หมายเหตุ:</strong> การแก้ไขจะไม่ลบข้อมูลการเช็คชื่อ แต่จะทำเครื่องหมายไว้ในระบบ เพื่อป้องกันการโกง
+                </div>
+                <label style="font-weight:bold;margin-bottom:8px;display:block;">เหตุผลในการแก้ไข (บังคับ):</label>
+                <textarea id="editReason" placeholder="เช่น นักเรียนเช็คชื่อแล้วแต่หนีออกจากห้อง, มาสาย 30 นาที, ลาป่วยกลางคาบ..." style="min-height:120px;"></textarea>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px;">
+                <button class="btn btn-primary btn-small" onclick="closeEditModal()">ยกเลิก</button>
+                <button class="btn btn-danger btn-small" onclick="confirmEdit()">✅ บันทึกการแก้ไข</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>📜 ประวัติการแก้ไข</h3></div>
+            <div id="historyContent" style="max-height:400px;overflow-y:auto;"></div>
+            <div style="display:flex;justify-content:flex-end;margin-top:15px;">
+                <button class="btn btn-primary btn-small" onclick="closeHistoryModal()">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
+const students=[{"id":"68219100031","barcode":"68219100031","name":"นางสาวชนกนันท์ ขันนาค","class":"1ทด2"},{"id":"68219100032","barcode":"68219100032","name":"นางสาวชาลิสา แก้วมณี","class":"1ทด2"},{"id":"68219100033","barcode":"68219100033","name":"นางสาวฐนัดดา พุ่มสุข","class":"1ทด2"},{"id":"68219100034","barcode":"68219100034","name":"นางสาวธัญญารัตน์ ส่าหร่ายรักษ์","class":"1ทด2"},{"id":"68219100035","barcode":"68219100035","name":"นางสาวธัญรัตน์ เจริญขาว","class":"1ทด2"},{"id":"68219100036","barcode":"68219100036","name":"นางสาวนันท์นภัส ดวงจังหวัด","class":"1ทด2"},{"id":"68219100037","barcode":"68219100037","name":"นางสาวประภัสสร พร้อมมูล","class":"1ทด2"},{"id":"68219100038","barcode":"68219100038","name":"นางสาวพรพรรณ ภู่ระหงษ์","class":"1ทด2"},{"id":"68219100039","barcode":"68219100039","name":"นางสาวภัทรวลัย วิเศษเจริญ","class":"1ทด2"},{"id":"68219100040","barcode":"68219100040","name":"นางสาวลลิตา ปัญญาลีฬหา","class":"1ทด2"},{"id":"68219100041","barcode":"68219100041","name":"นางสาววรยา ภัทรารวีย์","class":"1ทด2"},{"id":"68219100042","barcode":"68219100042","name":"นางสาววริสรา แสงสุวรรณ","class":"1ทด2"},{"id":"68219100043","barcode":"68219100043","name":"นางสาววริศรา เยสูงเนิน","class":"1ทด2"},{"id":"68219100044","barcode":"68219100044","name":"นางสาววีราภัทร เครือเทศ","class":"1ทด2"},{"id":"68219100045","barcode":"68219100045","name":"นางสาวศศิกมล แก้วสมนึก","class":"1ทด2"},{"id":"68219100046","barcode":"68219100046","name":"นางสาวศศิวิมล งางาม","class":"1ทด2"},{"id":"68219100047","barcode":"68219100047","name":"นางสาวสุพรรัตน์ พรพันเริศ","class":"1ทด2"},{"id":"68219100048","barcode":"68219100048","name":"นางสาวอรนรินทร์ คู่แจกัน","class":"1ทด2"},{"id":"68219100049","barcode":"68219100049","name":"นางสาวอัญชลีพร พุทธาสุ่น","class":"1ทด2"},{"id":"68219100050","barcode":"68219100050","name":"นายกิตติพิชญ์ ฐิตติพุฒินันท์","class":"1ทด2"},{"id":"68219100051","barcode":"68219100051","name":"นายถิรวิทย์ สิทธิขำ","class":"1ทด2"},{"id":"68219100052","barcode":"68219100052","name":"นายธนัท ทาระฐิน","class":"1ทด2"},{"id":"68219100053","barcode":"68219100053","name":"นายธีรเทพ กลั่นสกุล","class":"1ทด2"},{"id":"68219100054","barcode":"68219100054","name":"นายนพพร ตมะวิโมกษ์","class":"1ทด2"},{"id":"68219100055","barcode":"68219100055","name":"นายภีร์ภัทร ทิพย์เนตร","class":"1ทด2"},{"id":"68219100056","barcode":"68219100056","name":"นายรัฐธีร์ วัดโลก","class":"1ทด2"},{"id":"68219100057","barcode":"68219100057","name":"นายรัฐภูมิ สุวรรณสิทธิ์","class":"1ทด2"},{"id":"68219100058","barcode":"68219100058","name":"นายอมรเทพ -","class":"1ทด2"},{"id":"68219100059","barcode":"68219100059","name":"นายอมรเทพ เช้าวรรณโณ","class":"1ทด2"},{"id":"68219100060","barcode":"68219100060","name":"นายอานนท์ แซ่ลี้ (หัวหน้าห้อง)","class":"1ทด2"}];
+
+let attendance = {};
+let editHistory = [];
+let currentTab = 'all';
+let searchQuery = '';
+let currentEditStudent = null;
+let isScanning = false;
+let lastScannedCode = '';
+let lastScannedTime = 0;
+let video, canvas, ctx;
+let codeReader = null;
+let scanInterval = null;
+
+// ปรับปรุง: เปลี่ยนจาก requestAnimationFrame เป็น setInterval เพื่อความเร็วที่คงที่
+// และเพิ่มการ scan หลายครั้งต่อวินาที
+const SCAN_INTERVAL_MS = 150; // สแกนทุก 150ms (ประมาณ 6-7 ครั้งต่อวินาที)
+const DUPLICATE_THRESHOLD_MS = 3000; // ป้องกันการสแกนซ้ำภายใน 3 วินาที
+
+function switchMode(m) {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.mode-container').forEach(c => c.classList.remove('active'));
+    
+    if (m === 'manual') {
+        document.getElementById('manualMode').classList.add('active');
+        setTimeout(() => document.getElementById('manualInput').focus(), 100);
+        if (isScanning) stopCamera();
+    } else {
+        document.getElementById('cameraMode').classList.add('active');
+        document.getElementById('scanHint').style.display = 'block';
+    }
+}
+
+document.getElementById('manualInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const code = this.value.trim();
+        if (code) {
+            processBarcode(code);
+            this.value = '';
+        }
+    }
+});
+
+function updateDateTime() {
+    document.getElementById('dateTime').textContent = new Date().toLocaleString('th-TH', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
+
+function showNotification(msg, type = 'success') {
+    const existing = document.querySelector('.notification');
+    if (existing) existing.remove();
+    
+    const notif = document.createElement('div');
+    notif.className = `notification ${type}`;
+    notif.textContent = msg;
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.animation = 'slideIn 0.3s reverse';
+        setTimeout(() => notif.remove(), 300);
+    }, 3000);
+}
+
+document.getElementById('startCamera').addEventListener('click', async function() {
+    const btn = this;
+    video = document.getElementById('video');
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const status = document.getElementById('cameraStatus');
+    const overlay = document.getElementById('scannerOverlay');
+    const info = document.getElementById('scanInfo');
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span> กำลังเปิด...';
+        status.innerHTML = '<div style="font-size:2em;">⏳</div><div>กำลังเปิดกล้อง...</div>';
+        
+        // ลองหลาย constraints ตามลำดับ
+        let stream = null;
+        const constraints = [
+            // ลองแบบง่ายที่สุดก่อน
+            { video: true },
+            // ลองระบุกล้องหลัง
+            { video: { facingMode: 'environment' } },
+            // ลองกับความละเอียด
+            { video: { facingMode: 'environment', width: 1280, height: 720 } }
+        ];
+        
+        for (let i = 0; i < constraints.length; i++) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+                if (stream) break;
+            } catch (e) {
+                console.log(`Constraint ${i} failed:`, e);
+                if (i === constraints.length - 1) throw e;
+            }
+        }
+        
+        if (!stream) {
+            throw new Error('ไม่สามารถเปิดกล้องได้');
+        }
+        
+        video.srcObject = stream;
+        video.setAttribute('playsinline', true);
+        video.setAttribute('autoplay', true);
+        
+        // รอให้ video พร้อม
+        await new Promise((resolve, reject) => {
+            video.onloadedmetadata = () => {
+                video.play()
+                    .then(() => {
+                        // รอให้แน่ใจว่า video เริ่มเล่นแล้ว
+                        setTimeout(() => {
+                            if (video.readyState >= 2) {
+                                resolve();
+                            } else {
+                                reject(new Error('Video not ready'));
+                            }
+                        }, 500);
+                    })
+                    .catch(reject);
+            };
+            video.onerror = reject;
+            
+            // Timeout
+            setTimeout(() => reject(new Error('Timeout')), 10000);
+        });
+        
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
+        
+        status.style.display = 'none';
+        overlay.style.display = 'block';
+        info.style.display = 'block';
+        isScanning = true;
+        
+        btn.innerHTML = '📷 เปิดกล้อง';
+        btn.disabled = false;
+        document.getElementById('stopCamera').disabled = false;
+        
+        showNotification('✅ เปิดกล้องสำเร็จ!', 'success');
+        
+        // เริ่มการสแกน
+        startScanning();
+        
+    } catch (err) {
+        console.error('Camera error:', err);
+        
+        let errorMsg = 'เกิดข้อผิดพลาด';
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            errorMsg = 'กรุณาอนุญาตให้เข้าถึงกล้อง';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            errorMsg = 'ไม่พบกล้อง';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            errorMsg = 'กล้องถูกใช้งานอยู่';
+        } else if (err.message) {
+            errorMsg = err.message;
+        }
+        
+        status.innerHTML = `
+            <div style="font-size:2em;color:#fa709a;">❌</div>
+            <div>ไม่สามารถเปิดกล้องได้</div>
+            <div style="font-size:0.85em;margin-top:8px;color:#ccc;">${errorMsg}</div>
+            <div style="font-size:0.75em;margin-top:8px;color:#999;">ลองปิดแอปอื่นที่ใช้กล้องแล้วลองใหม่</div>
+        `;
+        btn.disabled = false;
+        btn.innerHTML = '📷 เปิดกล้อง';
+        showNotification(`❌ ${errorMsg}`, 'error');
+    }
+});
+
+// ปรับปรุง: ฟังก์ชันสแกนแบบใหม่ที่เร็วขึ้น
+function startScanning() {
+    if (scanInterval) {
+        clearInterval(scanInterval);
+    }
+    
+    scanInterval = setInterval(() => {
+        if (!isScanning || video.readyState !== video.HAVE_ENOUGH_DATA) {
+            return;
+        }
+        
+        try {
+            // วาดภาพจาก video ลงใน canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // ลอง jsQR ก่อน (เร็วกว่า)
+            const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert"
+            });
+            
+            if (qrCode && qrCode.data) {
+                processBarcode(qrCode.data);
+                return;
+            }
+            
+            // ถ้าไม่เจอ QR ลอง ZXing สำหรับบาร์โค้ด
+            scanWithZXing();
+            
+        } catch (err) {
+            console.error('Scan error:', err);
+        }
+    }, SCAN_INTERVAL_MS);
+}
+
+// ปรับปรุง: ZXing scanner ที่มีประสิทธิภาพดีขึ้น
+function scanWithZXing() {
+    if (!codeReader) {
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        // ตั้งค่า hints สำหรับการสแกนที่เร็วขึ้น
+        const hints = new Map();
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, false); // สแกนเร็วขึ้น
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.ITF
+        ]);
+        codeReader.hints = hints;
+    }
+    
+    try {
+        const result = codeReader.decodeFromCanvas(canvas);
+        if (result && result.text) {
+            processBarcode(result.text);
+        }
+    } catch (err) {
+        // ไม่เจอบาร์โค้ด ไม่ต้องทำอะไร
+    }
+}
+
+function stopCamera() {
+    isScanning = false;
+    
+    // หยุด interval
+    if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
+    }
+    
+    // รีเซ็ต code reader
+    if (codeReader) {
+        try {
+            codeReader.reset();
+        } catch (err) {
+            console.error('Reset error:', err);
+        }
+    }
+    
+    // ปิดกล้อง
+    if (video && video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    
+    document.getElementById('cameraStatus').style.display = 'flex';
+    document.getElementById('cameraStatus').innerHTML = '<div style="font-size:2.5em;">📷</div><div>กล้องปิดแล้ว</div>';
+    document.getElementById('scannerOverlay').style.display = 'none';
+    document.getElementById('scanInfo').style.display = 'none';
+    document.getElementById('startCamera').disabled = false;
+    document.getElementById('stopCamera').disabled = true;
+}
+
+document.getElementById('stopCamera').addEventListener('click', () => {
+    stopCamera();
+    showNotification('⏹️ ปิดกล้องแล้ว', 'warning');
+});
+
+// ปรับปรุง: ฟังก์ชันประมวลผลบาร์โค้ดที่ดีกว่า
+function processBarcode(barcode) {
+    if (!barcode || typeof barcode !== 'string') return;
+    
+    barcode = barcode.trim();
+    
+    // ตรวจสอบว่าเป็นบาร์โค้ดซ้ำหรือไม่
+    const now = Date.now();
+    if (barcode === lastScannedCode && (now - lastScannedTime) < DUPLICATE_THRESHOLD_MS) {
+        return; // ข้ามการสแกนซ้ำ
+    }
+    
+    lastScannedCode = barcode;
+    lastScannedTime = now;
+    
+    // ค้นหานักเรียน
+    const student = students.find(s => s.barcode === barcode || s.id === barcode);
+    
+    if (student) {
+        if (attendance[student.id]) {
+            // เช็คชื่อซ้ำ
+            showNotification(`⚠️ ${student.name} เช็คชื่อแล้ว!`, 'warning');
+            if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+        } else {
+            // เช็คชื่อสำเร็จ
+            attendance[student.id] = {
+                time: new Date().toLocaleTimeString('th-TH'),
+                date: new Date().toLocaleDateString('th-TH'),
+                edited: false
+            };
+            
+            showNotification(`✅ ${student.name} เช็คชื่อสำเร็จ!`, 'success');
+            if ('vibrate' in navigator) navigator.vibrate(200);
+            
+            updateDisplay();
+        }
+    } else {
+        // ไม่พบนักเรียน
+        showNotification(`❌ ไม่พบนักเรียน (${barcode})`, 'error');
+        if ('vibrate' in navigator) navigator.vibrate([100, 50, 100, 50, 100]);
+    }
+}
+
+function updateDisplay() {
+    updateStats();
+    updateStudentList();
+    updateTabCounts();
+}
+
+function updateStats() {
+    const presentCount = Object.keys(attendance).length;
+    document.getElementById('presentCount').textContent = presentCount;
+    document.getElementById('absentCount').textContent = students.length - presentCount;
+}
+
+function updateTabCounts() {
+    const presentCount = Object.keys(attendance).length;
+    document.querySelectorAll('.tab').forEach(tab => {
+        const tabType = tab.dataset.tab;
+        if (tabType === 'all') {
+            tab.textContent = `ทั้งหมด (${students.length})`;
+        } else if (tabType === 'present') {
+            tab.textContent = `มาเรียน (${presentCount})`;
+        } else if (tabType === 'absent') {
+            tab.textContent = `ขาด (${students.length - presentCount})`;
+        }
+    });
+}
+
+function updateStudentList() {
+    let filtered = students;
+    
+    // กรองตาม tab
+    if (currentTab === 'present') {
+        filtered = students.filter(s => attendance[s.id]);
+    } else if (currentTab === 'absent') {
+        filtered = students.filter(s => !attendance[s.id]);
+    }
+    
+    // กรองตามการค้นหา
+    if (searchQuery) {
+        filtered = filtered.filter(s => 
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.id.includes(searchQuery)
+        );
+    }
+    
+    const list = document.getElementById('studentList');
+    
+    if (filtered.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:40px;color:#999;"><div style="font-size:3em;">🔍</div><div>ไม่พบข้อมูล</div></div>';
+        return;
+    }
+    
+    list.innerHTML = filtered.map(student => {
+        const att = attendance[student.id];
+        const initial = student.name.charAt(3);
+        
+        return `
+            <div class="student-item ${att ? 'present' : 'absent'}">
+                <div class="student-info">
+                    <div class="student-avatar">${initial}</div>
+                    <div>
+                        <div class="student-name">${student.name}</div>
+                        <div class="student-id">รหัส: ${student.id}</div>
+                        ${att && att.edited ? '<div style="font-size:0.75em;color:#ff6b6b;font-weight:bold;margin-top:2px;">⚠️ มีการแก้ไข</div>' : ''}
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+                    <div class="check-time">${att ? `✓ ${att.time}` : '—'}</div>
+                    ${att ? `<button class="btn btn-danger btn-small" onclick="openEditModal('${student.id}')">✏️ แก้ไข</button>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        currentTab = this.dataset.tab;
+        updateStudentList();
+    });
+});
+
+// Search
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    searchQuery = e.target.value;
+    updateStudentList();
+});
+
+// Edit modal
+function openEditModal(studentId) {
+    currentEditStudent = studentId;
+    const student = students.find(s => s.id === studentId);
+    document.getElementById('editStudentInfo').textContent = `${student.name} (${student.id})`;
+    document.getElementById('editReason').value = '';
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('active');
+}
+
+function confirmEdit() {
+    const reason = document.getElementById('editReason').value.trim();
+    
+    if (!reason) {
+        showNotification('⚠️ กรุณาระบุเหตุผล', 'warning');
+        return;
+    }
+    
+    const student = students.find(s => s.id === currentEditStudent);
+    const oldData = { ...attendance[currentEditStudent] };
+    
+    // แทนที่จะลบ เราจะทำเครื่องหมายว่ามีการแก้ไข (ป้องกันการโกง)
+    attendance[currentEditStudent].edited = true;
+    attendance[currentEditStudent].editReason = reason;
+    attendance[currentEditStudent].editTime = new Date().toLocaleString('th-TH');
+    
+    editHistory.push({
+        studentId: currentEditStudent,
+        studentName: student.name,
+        action: 'ทำเครื่องหมายการแก้ไข',
+        reason: reason,
+        oldTime: oldData.time,
+        timestamp: new Date().toLocaleString('th-TH'),
+        editor: 'ครูผู้สอน'
+    });
+    
+    showNotification(`✅ บันทึกการแก้ไข ${student.name} สำเร็จ`, 'success');
+    updateDisplay();
+    closeEditModal();
+}
+
+// History modal
+function showHistory() {
+    const content = document.getElementById('historyContent');
+    
+    if (editHistory.length === 0) {
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#999;"><div style="font-size:3em;">📜</div><div>ยังไม่มีประวัติ</div></div>';
+    } else {
+        content.innerHTML = editHistory.map((h, i) => `
+            <div style="padding:10px;margin-bottom:8px;background:#f8f9fa;border-radius:8px;font-size:0.85em;">
+                <div style="font-weight:bold;color:#667eea;margin-bottom:5px;">#${editHistory.length - i} ${h.studentName}</div>
+                <div><strong>การดำเนินการ:</strong> ${h.action}</div>
+                <div><strong>เวลาเดิม:</strong> ${h.oldTime}</div>
+                <div><strong>เหตุผล:</strong> ${h.reason}</div>
+                <div style="color:#666;font-size:0.8em;">แก้ไขโดย ${h.editor} เมื่อ ${h.timestamp}</div>
+            </div>
+        `).reverse().join('');
+    }
+    
+    document.getElementById('historyModal').classList.add('active');
+}
+
+function closeHistoryModal() {
+    document.getElementById('historyModal').classList.remove('active');
+}
+
+// Export to Excel
+function exportToExcel() {
+    const data = students.map((student, index) => {
+        const att = attendance[student.id];
+        return {
+            'ลำดับ': index + 1,
+            'รหัส': student.id,
+            'ชื่อ-สกุล': student.name,
+            'ห้อง': student.class,
+            'สถานะ': att ? 'มาเรียน' : 'ขาดเรียน',
+            'เวลา': att ? att.time : '-',
+            'วันที่': att ? att.date : '-',
+            'มีการแก้ไข': att && att.edited ? 'ใช่' : 'ไม่',
+            'เหตุผลที่แก้ไข': att && att.edited ? att.editReason : '-'
+        };
+    });
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'การเข้าเรียน');
+    
+    if (editHistory.length > 0) {
+        const historyData = editHistory.map((h, i) => ({
+            'ลำดับ': i + 1,
+            'รหัส': h.studentId,
+            'ชื่อ': h.studentName,
+            'การดำเนินการ': h.action,
+            'เวลาเดิม': h.oldTime,
+            'เหตุผล': h.reason,
+            'เวลาแก้ไข': h.timestamp,
+            'ผู้แก้ไข': h.editor
+        }));
+        const wh = XLSX.utils.json_to_sheet(historyData);
+        XLSX.utils.book_append_sheet(wb, wh, 'ประวัติแก้ไข');
+    }
+    
+    const dateStr = new Date().toLocaleDateString('th-TH').replace(/\//g, '-');
+    XLSX.writeFile(wb, `รายงาน_1ทด2_${dateStr}.xlsx`);
+    showNotification('📊 ส่งออก Excel สำเร็จ!', 'success');
+}
+
+// Reset
+function resetAttendance() {
+    if (confirm('รีเซ็ตข้อมูลทั้งหมด?')) {
+        attendance = {};
+        editHistory = [];
+        updateDisplay();
+        showNotification('🔄 รีเซ็ตสำเร็จ!', 'success');
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('active');
+    }
+}
+
+// Initialize
+updateDateTime();
+setInterval(updateDateTime, 1000);
+updateDisplay();
+
+setTimeout(() => {
+    const input = document.getElementById('manualInput');
+    if (input) input.focus();
+}, 500);
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (isScanning) stopCamera();
+});
+    </script>
+</body>
+</html>
